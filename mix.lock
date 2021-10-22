@@ -1,4 +1,10 @@
 %{
+  "castore": {:hex, :castore, "0.1.12", "b5755d7668668a74c0e3c4c68df91da927e063a5cade17d693eff04e6ab64805", [:mix], [], "hexpm", "981c79528f88ec4ffd627214ad4cdd25052dc56c002996c603011ae37ec1b4b0"},
+  "finch": {:hex, :finch, "0.9.0", "8b772324aebafcaba763f1dffaa3e7f52f8c4e52485f50f48bbb2f42219a2e87", [:mix], [{:castore, "~> 0.1", [hex: :castore, repo: "hexpm", optional: false]}, {:mint, "~> 1.3", [hex: :mint, repo: "hexpm", optional: false]}, {:nimble_options, "~> 0.3.5", [hex: :nimble_options, repo: "hexpm", optional: false]}, {:nimble_pool, "~> 0.2", [hex: :nimble_pool, repo: "hexpm", optional: false]}, {:telemetry, "~> 0.4 or ~> 1.0", [hex: :telemetry, repo: "hexpm", optional: false]}], "hexpm", "a93bfcad9ca50fa3cb2d459f27667d9a87cfbb7fecf9b29b2e78a50bc2ab445d"},
+  "mint": {:hex, :mint, "1.4.0", "cd7d2451b201fc8e4a8fd86257fb3878d9e3752899eb67b0c5b25b180bde1212", [:mix], [{:castore, "~> 0.1.0", [hex: :castore, repo: "hexpm", optional: true]}], "hexpm", "10a99e144b815cbf8522dccbc8199d15802440fc7a64d67b6853adb6fa170217"},
+  "nimble_options": {:hex, :nimble_options, "0.3.7", "1e52dd7673d36138b1a5dede183b5d86dff175dc46d104a8e98e396b85b04670", [:mix], [], "hexpm", "2086907e6665c6b6579be54ef5001928df5231f355f71ed258f80a55e9f63633"},
+  "nimble_pool": {:hex, :nimble_pool, "0.2.4", "1db8e9f8a53d967d595e0b32a17030cdb6c0dc4a451b8ac787bf601d3f7704c3", [:mix], [], "hexpm", "367e8071e137b787764e6a9992ccb57b276dc2282535f767a07d881951ebeac6"},
+  "telemetry": {:hex, :telemetry, "1.0.0", "0f453a102cdf13d506b7c0ab158324c337c41f1cc7548f0bc0e130bbf0ae9452", [:rebar3], [], "hexpm", "73bc09fa59b4a0284efb4624335583c528e07ec9ae76aca96ea0673850aec57a"},
   "yamerl": {:hex, :yamerl, "0.8.1", "07da13ffa1d8e13948943789665c62ccd679dfa7b324a4a2ed3149df17f453a4", [:rebar3], [], "hexpm", "96cb30f9d64344fed0ef8a92e9f16f207de6c04dfff4f366752ca79f5bceb23f"},
   "yaml_elixir": {:hex, :yaml_elixir, "2.8.0", "c7ff0034daf57279c2ce902788ce6fdb2445532eb4317e8df4b044209fae6832", [:mix], [{:yamerl, "~> 0.8", [hex: :yamerl, repo: "hexpm", optional: false]}], "hexpm", "4b674bd881e373d1ac6a790c64b2ecb69d1fd612c2af3b22de1619c15473830b"},
 }

@@ -13,6 +13,12 @@ defmodule StripeElixirClient do
 
   """
 
+  use Application
+
+  def start(_start_type, _args) do
+    Finch.start_link(name: StripeHttpClient)
+  end
+
   path = Path.join(File.cwd!(), "abbreviatedSpec3.sdk.yaml")
 
   {:ok,
@@ -38,7 +44,14 @@ defmodule StripeElixirClient do
 
                 functionContent =
                   quote do
-                    def unquote(String.to_atom(x_stripe_operation["method_name"]))(), do: true
+                    def unquote(String.to_atom(x_stripe_operation["method_name"]))() do
+                      Finch.build(
+                        unquote(String.to_atom(x_stripe_operation["operation"])),
+                        "https://api.stripe.com/#{unquote(x_stripe_operation["path"])}",
+                        [{"Authorization", "Bearer sk_test_4eC39HqLyjWDarjtT1zdp7dc"}]
+                      )
+                      |> Finch.request(StripeHttpClient)
+                    end
                   end
 
                 [functionContent | acc]
