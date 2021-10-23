@@ -102,6 +102,10 @@ defmodule StripeElixirClient do
                           )
                       end
                       |> Finch.request(StripeHttpClient)
+                      |> case do
+                        {:ok, %Finch.Response{body: body}} -> Jason.decode!(~s(#{body}))
+                        {_, nil} -> nil
+                      end
                     end
                   end
 
