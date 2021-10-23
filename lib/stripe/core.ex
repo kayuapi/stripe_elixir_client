@@ -31,6 +31,20 @@ defmodule Stripe do
                 method_name = x_stripe_operation["method_name"]
                 operation = x_stripe_operation["operation"]
 
+                path_resource_variables =
+                  case x_stripe_operation["path_resource_variables"] do
+                    nil ->
+                      nil
+
+                    _ ->
+                      Enum.reduce(x_stripe_operation["path_resource_variables"], [], fn %{} =
+                                                                                          path_resource_variable,
+                                                                                        acc ->
+                        method_parameter = path_resource_variable["method_parameter"]
+                        [method_parameter | acc]
+                      end)
+                  end
+
                 # IO.puts(inspect(path))
                 # IO.puts(inspect(method_name))
                 # IO.puts(inspect(operation))
@@ -50,12 +64,13 @@ defmodule Stripe do
                 } = paths
 
                 propertiesList = Map.keys(properties)
+                IO.puts(inspect(path_resource_variables))
 
                 # propertiesListLength = length(propertiesList)
 
                 # functionContentArgs = Macro.generate_arguments(1, __MODULE__)
                 functionContentArgs =
-                  if length(propertiesList) > 0 do
+                  if length(propertiesList) > 0 or !is_nil(path_resource_variables) do
                     Macro.generate_arguments(1, __MODULE__)
                   else
                     Macro.generate_arguments(0, __MODULE__)
@@ -67,6 +82,12 @@ defmodule Stripe do
                           unquote_splicing(functionContentArgs)
                         ) do
                       # api_key = Application.fetch_env!(:stripe_elixir_client, :api_key)
+                      request_path_need_modified =
+                        Regex.match?(
+                          ~r/{(.*?)\}/,
+                          unquote(x_stripe_operation["path"])
+                        )
+
                       case (unquote_splicing(functionContentArgs)) do
                         nil ->
                           Finch.build(
@@ -76,12 +97,29 @@ defmodule Stripe do
                           )
 
                         _ ->
-                          Finch.build(
-                            unquote(String.to_atom(operation)),
-                            "https://api.stripe.com/#{unquote(x_stripe_operation["path"])}",
-                            [{"Authorization", "Bearer sk_test_4eC39HqLyjWDarjtT1zdp7dc"}],
-                            URI.encode_query((unquote_splicing(functionContentArgs)))
-                          )
+                          case request_path_need_modified do
+                            false ->
+                              Finch.build(
+                                unquote(String.to_atom(operation)),
+                                "https://api.stripe.com/#{unquote(x_stripe_operation["path"])}",
+                                [{"Authorization", "Bearer sk_test_4eC39HqLyjWDarjtT1zdp7dc"}],
+                                URI.encode_query((unquote_splicing(functionContentArgs)))
+                              )
+
+                            true ->
+                              request_path =
+                                Regex.replace(
+                                  ~r/{(.*?)\}/,
+                                  unquote(x_stripe_operation["path"]),
+                                  (unquote_splicing(functionContentArgs))
+                                )
+
+                              Finch.build(
+                                unquote(String.to_atom(operation)),
+                                "https://api.stripe.com/#{request_path}",
+                                [{"Authorization", "Bearer sk_test_4eC39HqLyjWDarjtT1zdp7dc"}]
+                              )
+                          end
                       end
                       |> Finch.request(StripeHttpClient)
                       |> case do
