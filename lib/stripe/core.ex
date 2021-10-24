@@ -64,17 +64,21 @@ defmodule Stripe do
                 } = paths
 
                 propertiesList = Map.keys(properties)
-                IO.puts(inspect(path_resource_variables))
 
-                # propertiesListLength = length(propertiesList)
-
-                # functionContentArgs = Macro.generate_arguments(1, __MODULE__)
-                functionContentArgs =
-                  if length(propertiesList) > 0 or !is_nil(path_resource_variables) do
-                    Macro.generate_arguments(1, __MODULE__)
-                  else
-                    Macro.generate_arguments(0, __MODULE__)
+                total_arguments_count =
+                  case is_nil(path_resource_variables) do
+                    true -> 0
+                    false -> length(path_resource_variables)
                   end
+
+                total_arguments_count =
+                  total_arguments_count +
+                    case length(propertiesList) > 0 do
+                      true -> 1
+                      false -> 0
+                    end
+
+                functionContentArgs = Macro.generate_arguments(total_arguments_count, __MODULE__)
 
                 functionContent =
                   quote do
@@ -82,14 +86,13 @@ defmodule Stripe do
                           unquote_splicing(functionContentArgs)
                         ) do
                       # api_key = Application.fetch_env!(:stripe_elixir_client, :api_key)
-                      request_path_need_modified =
-                        Regex.match?(
-                          ~r/{(.*?)\}/,
-                          unquote(x_stripe_operation["path"])
-                        )
 
-                      case (unquote_splicing(functionContentArgs)) do
-                        nil ->
+                      functionContentArgs = unquote(functionContentArgs)
+                      parameterIndex = Enum.find_index(functionContentArgs, fn x -> is_map(x) end)
+                      requestedPath = unquote(x_stripe_operation["path"])
+
+                      case functionContentArgs do
+                        [] ->
                           Finch.build(
                             unquote(String.to_atom(operation)),
                             "https://api.stripe.com/#{unquote(x_stripe_operation["path"])}",
@@ -97,27 +100,39 @@ defmodule Stripe do
                           )
 
                         _ ->
-                          case request_path_need_modified do
-                            false ->
+                          pathVariableArgs =
+                            if is_nil(parameterIndex) do
+                              functionContentArgs
+                            else
+                              Enum.slice(functionContentArgs, 0, parameterIndex)
+                            end
+
+                          requestedPath =
+                            Enum.reduce(pathVariableArgs, requestedPath, fn path_variable, acc ->
+                              Regex.replace(
+                                ~r/{(.*?)\}/,
+                                acc,
+                                to_string(path_variable),
+                                global: false
+                              )
+                            end)
+
+                          # IO.puts(inspect(requestedPath))
+
+                          case parameterIndex do
+                            nil ->
                               Finch.build(
                                 unquote(String.to_atom(operation)),
-                                "https://api.stripe.com/#{unquote(x_stripe_operation["path"])}",
-                                [{"Authorization", "Bearer sk_test_4eC39HqLyjWDarjtT1zdp7dc"}],
-                                URI.encode_query((unquote_splicing(functionContentArgs)))
+                                "https://api.stripe.com/#{requestedPath}",
+                                [{"Authorization", "Bearer sk_test_4eC39HqLyjWDarjtT1zdp7dc"}]
                               )
 
-                            true ->
-                              request_path =
-                                Regex.replace(
-                                  ~r/{(.*?)\}/,
-                                  unquote(x_stripe_operation["path"]),
-                                  (unquote_splicing(functionContentArgs))
-                                )
-
+                            _ ->
                               Finch.build(
                                 unquote(String.to_atom(operation)),
-                                "https://api.stripe.com/#{request_path}",
-                                [{"Authorization", "Bearer sk_test_4eC39HqLyjWDarjtT1zdp7dc"}]
+                                "https://api.stripe.com/#{requestedPath}",
+                                [{"Authorization", "Bearer sk_test_4eC39HqLyjWDarjtT1zdp7dc"}],
+                                URI.encode_query(Enum.at(functionContentArgs, parameterIndex))
                               )
                           end
                       end
