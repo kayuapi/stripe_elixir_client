@@ -14,7 +14,13 @@ defmodule Stripe do
   # IO.puts(inspect(paths))
 
   for {schema, attributes} <- schemas do
-    moduleName = String.to_atom(Macro.camelize(schema))
+    moduleName =
+      schema
+      |> String.split(".", trim: true)
+      |> Enum.map(fn x -> Macro.camelize(x) end)
+      |> Enum.join(".")
+      |> String.to_atom()
+
     IO.puts(inspect(moduleName))
     # IO.puts(inspect(attributes))
 
