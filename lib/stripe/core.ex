@@ -1,7 +1,7 @@
 defmodule Stripe do
-  @external_resource Path.join(File.cwd!(), "abbreviatedSpec3.sdk.yaml")
+  @external_resource Path.join(File.cwd!(), "spec3.sdk.yaml")
 
-  path = Path.join(File.cwd!(), "abbreviatedSpec3.sdk.yaml")
+  path = Path.join(File.cwd!(), "spec3.sdk.yaml")
 
   {:ok,
    %{
@@ -118,7 +118,7 @@ defmodule Stripe do
                         [] ->
                           Finch.build(
                             unquote(String.to_atom(operation)),
-                            "https://api.stripe.com/#{unquote(x_stripe_operation["path"])}",
+                            "https://api.stripe.com#{requestedPath}",
                             [{"Authorization", "Bearer sk_test_4eC39HqLyjWDarjtT1zdp7dc"}]
                           )
 
@@ -146,14 +146,14 @@ defmodule Stripe do
                             nil ->
                               Finch.build(
                                 unquote(String.to_atom(operation)),
-                                "https://api.stripe.com/#{requestedPath}",
+                                "https://api.stripe.com#{requestedPath}",
                                 [{"Authorization", "Bearer sk_test_4eC39HqLyjWDarjtT1zdp7dc"}]
                               )
 
                             _ ->
                               Finch.build(
                                 unquote(String.to_atom(operation)),
-                                "https://api.stripe.com/#{requestedPath}",
+                                "https://api.stripe.com#{requestedPath}",
                                 [{"Authorization", "Bearer sk_test_4eC39HqLyjWDarjtT1zdp7dc"}],
                                 URI.encode_query(Enum.at(functionContentArgs, parameterIndex))
                               )
@@ -181,7 +181,7 @@ defmodule Stripe do
                         [] ->
                           Finch.build(
                             unquote(String.to_atom(operation)),
-                            "https://api.stripe.com/#{unquote(x_stripe_operation["path"])}",
+                            "https://api.stripe.com#{requestedPath}",
                             [{"Authorization", "Bearer sk_test_4eC39HqLyjWDarjtT1zdp7dc"}]
                           )
 
@@ -209,7 +209,7 @@ defmodule Stripe do
                             nil ->
                               Finch.build(
                                 unquote(String.to_atom(operation)),
-                                "https://api.stripe.com/#{requestedPath}",
+                                "https://api.stripe.com#{requestedPath}",
                                 [{"Authorization", "Bearer sk_test_4eC39HqLyjWDarjtT1zdp7dc"}]
                               )
 
@@ -244,7 +244,7 @@ defmodule Stripe do
 
                               Finch.build(
                                 unquote(String.to_atom(operation)),
-                                "https://files.stripe.com/#{unquote(x_stripe_operation["path"])}",
+                                "https://files.stripe.com#{requestedPath}",
                                 headers,
                                 {:stream, body_stream}
                               )
