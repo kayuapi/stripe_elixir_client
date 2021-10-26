@@ -58,15 +58,28 @@ defmodule Stripe do
                 ^path => %{
                   ^operation => %{
                     "requestBody" => %{
-                      "content" => %{
-                        "application/x-www-form-urlencoded" => %{
-                          "schema" => %{"properties" => properties}
-                        }
-                      }
+                      "content" => content
                     }
                   }
                 }
               } = paths
+
+              properties =
+                case content do
+                  %{
+                    "application/x-www-form-urlencoded" => %{
+                      "schema" => %{"properties" => properties}
+                    }
+                  } ->
+                    properties
+
+                  %{
+                    "multipart/form-data" => %{
+                      "schema" => %{"properties" => properties}
+                    }
+                  } ->
+                    properties
+                end
 
               propertiesList = Map.keys(properties)
 
@@ -86,63 +99,158 @@ defmodule Stripe do
               functionContentArgs = Macro.generate_arguments(total_arguments_count, __MODULE__)
 
               functionContent =
-                quote do
-                  def unquote(String.to_atom(method_name))(unquote_splicing(functionContentArgs)) do
-                    # api_key = Application.fetch_env!(:stripe_elixir_client, :api_key)
+                if moduleName !== :File || String.to_atom(method_name) !== :create do
+                  quote do
+                    def unquote(String.to_atom(method_name))(
+                          unquote_splicing(functionContentArgs)
+                        ) do
+                      # api_key = Application.fetch_env!(:stripe_elixir_client, :api_key)
 
-                    functionContentArgs = unquote(functionContentArgs)
-                    parameterIndex = Enum.find_index(functionContentArgs, fn x -> is_map(x) end)
-                    requestedPath = unquote(x_stripe_operation["path"])
+                      functionContentArgs = unquote(functionContentArgs)
+                      parameterIndex = Enum.find_index(functionContentArgs, fn x -> is_map(x) end)
+                      requestedPath = unquote(x_stripe_operation["path"])
 
-                    case functionContentArgs do
-                      [] ->
-                        Finch.build(
-                          unquote(String.to_atom(operation)),
-                          "https://api.stripe.com/#{unquote(x_stripe_operation["path"])}",
-                          [{"Authorization", "Bearer sk_test_4eC39HqLyjWDarjtT1zdp7dc"}]
-                        )
+                      case functionContentArgs do
+                        [] ->
+                          Finch.build(
+                            unquote(String.to_atom(operation)),
+                            "https://api.stripe.com/#{unquote(x_stripe_operation["path"])}",
+                            [{"Authorization", "Bearer sk_test_4eC39HqLyjWDarjtT1zdp7dc"}]
+                          )
 
-                      _ ->
-                        pathVariableArgs =
-                          if is_nil(parameterIndex) do
-                            functionContentArgs
-                          else
-                            Enum.slice(functionContentArgs, 0, parameterIndex)
+                        _ ->
+                          pathVariableArgs =
+                            if is_nil(parameterIndex) do
+                              functionContentArgs
+                            else
+                              Enum.slice(functionContentArgs, 0, parameterIndex)
+                            end
+
+                          requestedPath =
+                            Enum.reduce(pathVariableArgs, requestedPath, fn path_variable, acc ->
+                              Regex.replace(
+                                ~r/{(.*?)\}/,
+                                acc,
+                                to_string(path_variable),
+                                global: false
+                              )
+                            end)
+
+                          # IO.puts(inspect(requestedPath))
+
+                          case parameterIndex do
+                            nil ->
+                              Finch.build(
+                                unquote(String.to_atom(operation)),
+                                "https://api.stripe.com/#{requestedPath}",
+                                [{"Authorization", "Bearer sk_test_4eC39HqLyjWDarjtT1zdp7dc"}]
+                              )
+
+                            _ ->
+                              Finch.build(
+                                unquote(String.to_atom(operation)),
+                                "https://api.stripe.com/#{requestedPath}",
+                                [{"Authorization", "Bearer sk_test_4eC39HqLyjWDarjtT1zdp7dc"}],
+                                URI.encode_query(Enum.at(functionContentArgs, parameterIndex))
+                              )
                           end
-
-                        requestedPath =
-                          Enum.reduce(pathVariableArgs, requestedPath, fn path_variable, acc ->
-                            Regex.replace(
-                              ~r/{(.*?)\}/,
-                              acc,
-                              to_string(path_variable),
-                              global: false
-                            )
-                          end)
-
-                        # IO.puts(inspect(requestedPath))
-
-                        case parameterIndex do
-                          nil ->
-                            Finch.build(
-                              unquote(String.to_atom(operation)),
-                              "https://api.stripe.com/#{requestedPath}",
-                              [{"Authorization", "Bearer sk_test_4eC39HqLyjWDarjtT1zdp7dc"}]
-                            )
-
-                          _ ->
-                            Finch.build(
-                              unquote(String.to_atom(operation)),
-                              "https://api.stripe.com/#{requestedPath}",
-                              [{"Authorization", "Bearer sk_test_4eC39HqLyjWDarjtT1zdp7dc"}],
-                              URI.encode_query(Enum.at(functionContentArgs, parameterIndex))
-                            )
-                        end
+                      end
+                      |> Finch.request(StripeHttpClient)
+                      |> case do
+                        {:ok, %Finch.Response{body: body}} -> Jason.decode!(~s(#{body}))
+                        {_, nil} -> nil
+                      end
                     end
-                    |> Finch.request(StripeHttpClient)
-                    |> case do
-                      {:ok, %Finch.Response{body: body}} -> Jason.decode!(~s(#{body}))
-                      {_, nil} -> nil
+                  end
+                else
+                  quote do
+                    def unquote(String.to_atom(method_name))(
+                          unquote_splicing(functionContentArgs)
+                        ) do
+                      # api_key = Application.fetch_env!(:stripe_elixir_client, :api_key)
+
+                      functionContentArgs = unquote(functionContentArgs)
+                      parameterIndex = Enum.find_index(functionContentArgs, fn x -> is_map(x) end)
+                      requestedPath = unquote(x_stripe_operation["path"])
+
+                      case functionContentArgs do
+                        [] ->
+                          Finch.build(
+                            unquote(String.to_atom(operation)),
+                            "https://api.stripe.com/#{unquote(x_stripe_operation["path"])}",
+                            [{"Authorization", "Bearer sk_test_4eC39HqLyjWDarjtT1zdp7dc"}]
+                          )
+
+                        _ ->
+                          pathVariableArgs =
+                            if is_nil(parameterIndex) do
+                              functionContentArgs
+                            else
+                              Enum.slice(functionContentArgs, 0, parameterIndex)
+                            end
+
+                          requestedPath =
+                            Enum.reduce(pathVariableArgs, requestedPath, fn path_variable, acc ->
+                              Regex.replace(
+                                ~r/{(.*?)\}/,
+                                acc,
+                                to_string(path_variable),
+                                global: false
+                              )
+                            end)
+
+                          # IO.puts(inspect(requestedPath))
+
+                          case parameterIndex do
+                            nil ->
+                              Finch.build(
+                                unquote(String.to_atom(operation)),
+                                "https://api.stripe.com/#{requestedPath}",
+                                [{"Authorization", "Bearer sk_test_4eC39HqLyjWDarjtT1zdp7dc"}]
+                              )
+
+                            _ ->
+                              parameters = Enum.at(functionContentArgs, parameterIndex)
+
+                              multipart =
+                                Multipart.new()
+                                |> Multipart.add_part(
+                                  Multipart.Part.text_field(
+                                    parameters[:purpose],
+                                    :purpose
+                                  )
+                                )
+                                |> Multipart.add_part(
+                                  Multipart.Part.file_field(
+                                    parameters[:file],
+                                    :file
+                                  )
+                                )
+
+                              body_stream = Multipart.body_stream(multipart)
+                              # body_stream |> Enum.take(30) |> inspect |> IO.puts()
+
+                              content_type =
+                                Multipart.content_type(multipart, "multipart/form-data")
+
+                              headers = [
+                                {"Authorization", "Bearer sk_test_4eC39HqLyjWDarjtT1zdp7dc"},
+                                {"Content-Type", content_type}
+                              ]
+
+                              Finch.build(
+                                unquote(String.to_atom(operation)),
+                                "https://files.stripe.com/#{unquote(x_stripe_operation["path"])}",
+                                headers,
+                                {:stream, body_stream}
+                              )
+                          end
+                      end
+                      |> Finch.request(StripeHttpClient)
+                      |> case do
+                        {:ok, %Finch.Response{body: body}} -> Jason.decode!(~s(#{body}))
+                        {_, nil} -> nil
+                      end
                     end
                   end
                 end
