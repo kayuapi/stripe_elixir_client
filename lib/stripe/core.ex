@@ -96,7 +96,11 @@ defmodule Stripe do
                     false -> 0
                   end
 
-              functionContentArgs = Macro.generate_arguments(total_arguments_count, __MODULE__)
+              functionContentArgs =
+                Macro.generate_arguments(
+                  total_arguments_count,
+                  String.to_atom("#{__MODULE__}.#{moduleName}")
+                )
 
               functionContent =
                 if moduleName !== :File || String.to_atom(method_name) !== :create do
